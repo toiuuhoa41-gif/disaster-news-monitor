@@ -103,9 +103,9 @@ const Index = () => {
             <div className="space-y-3 max-h-[500px] overflow-y-auto scrollbar-thin pr-2">
               {RECENT_ARTICLES.map((article, index) => (
                 <ArticleCard
-                  key={article.id}
+                  key={article.url}
                   {...article}
-                  severity={article.severity as "high" | "medium" | "low"}
+                  severity={article.severity || "medium"}
                   index={index}
                 />
               ))}
