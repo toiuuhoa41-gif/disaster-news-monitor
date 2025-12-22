@@ -14,7 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      articles: {
+        Row: {
+          authors: string[] | null
+          category: string | null
+          created_at: string
+          id: string
+          keywords: string[] | null
+          language: string | null
+          publish_date: string | null
+          severity: string | null
+          source: string
+          summary: string | null
+          tags: string[] | null
+          text: string | null
+          title: string
+          top_image: string | null
+          update_date: string | null
+          url: string
+        }
+        Insert: {
+          authors?: string[] | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          keywords?: string[] | null
+          language?: string | null
+          publish_date?: string | null
+          severity?: string | null
+          source: string
+          summary?: string | null
+          tags?: string[] | null
+          text?: string | null
+          title: string
+          top_image?: string | null
+          update_date?: string | null
+          url: string
+        }
+        Update: {
+          authors?: string[] | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          keywords?: string[] | null
+          language?: string | null
+          publish_date?: string | null
+          severity?: string | null
+          source?: string
+          summary?: string | null
+          tags?: string[] | null
+          text?: string | null
+          title?: string
+          top_image?: string | null
+          update_date?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
+      crawl_logs: {
+        Row: {
+          completed_at: string | null
+          disaster_articles: number | null
+          error_message: string | null
+          id: string
+          sources_crawled: number | null
+          started_at: string
+          status: string | null
+          total_articles: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          disaster_articles?: number | null
+          error_message?: string | null
+          id?: string
+          sources_crawled?: number | null
+          started_at?: string
+          status?: string | null
+          total_articles?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          disaster_articles?: number | null
+          error_message?: string | null
+          id?: string
+          sources_crawled?: number | null
+          started_at?: string
+          status?: string | null
+          total_articles?: number | null
+        }
+        Relationships: []
+      }
+      sources: {
+        Row: {
+          articles_count: number | null
+          categories: string[] | null
+          created_at: string
+          domain: string
+          id: string
+          last_crawl: string | null
+          name: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          articles_count?: number | null
+          categories?: string[] | null
+          created_at?: string
+          domain: string
+          id: string
+          last_crawl?: string | null
+          name: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          articles_count?: number | null
+          categories?: string[] | null
+          created_at?: string
+          domain?: string
+          id?: string
+          last_crawl?: string | null
+          name?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

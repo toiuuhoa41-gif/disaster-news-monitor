@@ -1,1 +1,10 @@
 project_id = "twyufwjphxuqginxboxz"
+
+[functions.ingest-articles]
+verify_jwt = false
+
+[functions.get-articles]
+verify_jwt = false
+
+[functions.get-stats]
+verify_jwt = false
