@@ -3,22 +3,26 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Clock, ExternalLink } from "lucide-react";
 
 interface ArticleCardProps {
+  url: string;
   title: string;
   source: string;
   category: string;
-  publishedAt: string;
+  publish_date: string;
   keywords: string[];
-  severity: "high" | "medium" | "low";
+  tags: string[];
+  severity?: "high" | "medium" | "low";
   index: number;
 }
 
 export function ArticleCard({
+  url,
   title,
   source,
   category,
-  publishedAt,
+  publish_date,
   keywords,
-  severity,
+  tags,
+  severity = "medium",
   index,
 }: ArticleCardProps) {
   const severityConfig = {
@@ -92,7 +96,7 @@ export function ArticleCard({
             <span>•</span>
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatTime(publishedAt)}
+              {formatTime(publish_date)}
             </div>
           </div>
 
