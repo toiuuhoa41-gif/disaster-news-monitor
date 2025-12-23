@@ -1,6 +1,5 @@
 # 📊 BÁO CÁO DỰ ÁN DISASTER NEWS MONITOR
-## Hệ Thống Giám Sát Tin Tức Thiên Tai Thời Gian Thực
-
+## Hệ Thống Giám Sát Tin Tức Thiên Tai
 ---
 
 ## 📋 MỤC LỤC

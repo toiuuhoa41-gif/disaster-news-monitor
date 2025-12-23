@@ -263,11 +263,11 @@ app = FastAPI(
 # Middleware
 # ============================================
 
-# CORS Middleware
+# CORS Middleware - using wildcard for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_credentials=settings.cors_allow_credentials,
+    allow_origins=["*"],  # Allow all origins in development
+    allow_credentials=False,  # Must be False when using "*"
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["X-Request-ID", "X-Process-Time"],
@@ -282,15 +282,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 async def add_process_time_header(request: Request, call_next):
     """Add processing time header and log requests"""
     start_time = time.time()
-    
-    # Handle CORS preflight - return 200 for OPTIONS
-    if request.method == "OPTIONS":
-        response = Response(status_code=200)
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Max-Age"] = "86400"
-        return response
     
     response = await call_next(request)
     

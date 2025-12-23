@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     
     # CORS settings - comma separated origins
-    cors_origins: str = "*"  # Allow all origins in development
-    cors_allow_credentials: bool = False  # Must be False with wildcard origin
+    cors_origins: str = "http://localhost:8080,http://localhost:5173,http://localhost:3000,http://127.0.0.1:8080,http://127.0.0.1:5173,http://127.0.0.1:3000"
+    cors_allow_credentials: bool = True
     
     @property
     def cors_origins_list(self) -> List[str]:
