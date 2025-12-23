@@ -1,0 +1,66 @@
+# Disaster Monitor - Crawler Workflow
+# Runs crawler on schedule and on-demand
+
+name: Crawler Pipeline
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Specific sources to crawl (comma-separated, leave empty for all)'
+        required: false
+        default: ''
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  crawl:
+    name: Run Crawler
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run crawler
+        env:
+          MONGO_URI: mongodb://localhost:27017
+          DATABASE_NAME: disaster_monitor
+          CRAWL_SOURCES: ${{ github.event.inputs.sources }}
+        run: |
+          python -c "
+          import asyncio
+          from mongodb.api.services.crawl_service import DailyCrawlService
+          
+          async def main():
+              service = DailyCrawlService()
+              articles = await service.crawl_all_sources()
+              print(f'Crawled {len(articles)} articles')
+          
+          asyncio.run(main())
+          "
+
+      - name: Report results
+        run: |
+          echo "Crawler completed at $(date)"

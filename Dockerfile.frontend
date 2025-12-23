@@ -1,0 +1,55 @@
+# Disaster Monitor Frontend - Multi-stage Dockerfile
+
+# ============================================
+# Stage 1: Build
+# ============================================
+FROM node:20-alpine as builder
+
+WORKDIR /app
+
+# Build arguments
+ARG VITE_API_URL=http://localhost:8000
+ARG VITE_WS_URL=ws://localhost:8000
+
+# Set environment variables for build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
+
+# Copy package files
+COPY package.json package-lock.json* bun.lockb* ./
+
+# Install dependencies (try bun first, fallback to npm)
+RUN if [ -f bun.lockb ]; then \
+        npm install -g bun && bun install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then \
+        npm ci; \
+    else \
+        npm install; \
+    fi
+
+# Copy source code
+COPY . .
+
+# Build application
+RUN npm run build
+
+# ============================================
+# Stage 2: Production
+# ============================================
+FROM nginx:alpine as production
+
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built assets from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:80 || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

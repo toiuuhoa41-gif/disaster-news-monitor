@@ -1,17 +1,21 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Clock, ExternalLink } from "lucide-react";
+import { AlertTriangle, Clock, ExternalLink, MapPin } from "lucide-react";
 
 interface ArticleCardProps {
   url: string;
   title: string;
   source: string;
-  category: string;
-  publish_date: string;
-  keywords: string[];
-  tags: string[];
+  category?: string;
+  publish_date?: string;
+  publishDate?: Date | string;
+  keywords?: string[];
+  tags?: string[];
   severity?: "high" | "medium" | "low";
   index: number;
+  region?: string;
+  disaster_type?: string;
+  summary?: string;
 }
 
 export function ArticleCard({
@@ -20,10 +24,14 @@ export function ArticleCard({
   source,
   category,
   publish_date,
-  keywords,
-  tags,
+  publishDate,
+  keywords = [],
+  tags = [],
   severity = "medium",
   index,
+  region,
+  disaster_type,
+  summary,
 }: ArticleCardProps) {
   const severityConfig = {
     high: {
@@ -46,14 +54,21 @@ export function ArticleCard({
     },
   };
 
-  const config = severityConfig[severity];
+  // Fallback to 'low' if severity is invalid
+  const validSeverity = severity && severityConfig[severity] ? severity : 'low';
+  const config = severityConfig[validSeverity];
 
-  const formatTime = (isoString: string) => {
-    const date = new Date(isoString);
+  const formatTime = (dateInput: string | Date | undefined) => {
+    if (!dateInput) return "Không rõ";
+    
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    if (isNaN(date.getTime())) return "Không rõ";
+    
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
+    if (diffMins < 0) return "Vừa xong";
     if (diffMins < 60) {
       return `${diffMins} phút trước`;
     }
@@ -64,6 +79,16 @@ export function ArticleCard({
     return date.toLocaleDateString("vi-VN");
   };
 
+  // Use publish_date or publishDate (for backward compatibility)
+  const displayDate = publish_date || publishDate;
+  const displayCategory = disaster_type || category || "Thiên tai";
+
+  const handleClick = () => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -71,6 +96,8 @@ export function ArticleCard({
         config.borderClass
       )}
       style={{ animationDelay: `${index * 80}ms` }}
+      onClick={handleClick}
+      title={summary || title}
     >
       <div className="flex items-start gap-3">
         {severity === "high" && (
@@ -89,14 +116,23 @@ export function ArticleCard({
             <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
           </div>
 
-          <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground flex-wrap">
             <span className="font-medium text-foreground/80">{source}</span>
             <span>•</span>
-            <span>{category}</span>
+            <span>{displayCategory}</span>
+            {region && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {region}
+                </div>
+              </>
+            )}
             <span>•</span>
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatTime(publish_date)}
+              {formatTime(displayDate)}
             </div>
           </div>
 

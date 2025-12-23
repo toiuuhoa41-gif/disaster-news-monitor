@@ -1,33 +1,70 @@
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { HOURLY_STATS } from "@/data/mockData";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { useDashboardOverview } from "@/hooks/useStats";
+import { RefreshCw } from "lucide-react";
+
+// Colors for severity levels
+const SEVERITY_COLORS = {
+  high: "hsl(0, 84%, 60%)",      // Red
+  medium: "hsl(35, 85%, 55%)",   // Orange  
+  low: "hsl(188, 85%, 50%)",     // Cyan
+};
 
 export function CrawlChart() {
+  const { data: overview, isLoading, error } = useDashboardOverview();
+
+  // Transform overview data to severity chart format
+  const chartData = overview ? [
+    { name: "Cao", value: overview.severity_high || 0, color: SEVERITY_COLORS.high },
+    { name: "Trung bình", value: overview.severity_medium || 0, color: SEVERITY_COLORS.medium },
+    { name: "Thấp", value: overview.severity_low || 0, color: SEVERITY_COLORS.low },
+  ] : [];
+
+  const totalDisaster = overview?.disaster_articles || 0;
+
+  if (isLoading) {
+    return (
+      <div className="glass rounded-xl p-5 animate-fade-in" style={{ animationDelay: "150ms" }}>
+        <h3 className="text-lg font-semibold mb-4">Phân bố mức độ nghiêm trọng</h3>
+        <div className="h-64 flex items-center justify-center">
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="glass rounded-xl p-5 animate-fade-in" style={{ animationDelay: "150ms" }}>
+        <h3 className="text-lg font-semibold mb-4">Phân bố mức độ nghiêm trọng</h3>
+        <div className="h-64 flex items-center justify-center text-muted-foreground">
+          Không thể tải dữ liệu
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="glass rounded-xl p-5 animate-fade-in" style={{ animationDelay: "150ms" }}>
-      <h3 className="text-lg font-semibold mb-4">Hoạt động crawl hôm nay</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">Phân bố mức độ nghiêm trọng</h3>
+        <span className="text-sm text-muted-foreground">{totalDisaster} bài thiên tai</span>
+      </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={HOURLY_STATS}>
-            <defs>
-              <linearGradient id="colorArticles" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(188 85% 50%)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(188 85% 50%)" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="colorDisaster" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(0 84% 60%)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(0 84% 60%)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="hour"
+          <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 30 }}>
+            <XAxis 
+              type="number" 
               axisLine={false}
               tickLine={false}
               tick={{ fill: "hsl(215 20% 55%)", fontSize: 11 }}
             />
-            <YAxis
+            <YAxis 
+              type="category" 
+              dataKey="name"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "hsl(215 20% 55%)", fontSize: 11 }}
+              tick={{ fill: "hsl(215 20% 55%)", fontSize: 12 }}
+              width={80}
             />
             <Tooltip
               contentStyle={{
@@ -38,37 +75,30 @@ export function CrawlChart() {
               }}
               labelStyle={{ color: "hsl(210 40% 96%)" }}
               itemStyle={{ color: "hsl(210 40% 96%)" }}
+              formatter={(value: number) => [`${value} bài`, "Số lượng"]}
             />
-            <Area
-              type="monotone"
-              dataKey="articles"
-              stroke="hsl(188 85% 50%)"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorArticles)"
-              name="Tổng bài"
-            />
-            <Area
-              type="monotone"
-              dataKey="disaster"
-              stroke="hsl(0 84% 60%)"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorDisaster)"
-              name="Thiên tai"
-            />
-          </AreaChart>
+            <Bar 
+              dataKey="value" 
+              radius={[0, 4, 4, 0]}
+              barSize={32}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
       <div className="flex items-center justify-center gap-6 mt-4">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-accent" />
-          <span className="text-sm text-muted-foreground">Tổng bài viết</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-primary" />
-          <span className="text-sm text-muted-foreground">Bài thiên tai</span>
-        </div>
+        {chartData.map((item) => (
+          <div key={item.name} className="flex items-center gap-2">
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: item.color }}
+            />
+            <span className="text-sm text-muted-foreground">{item.name}: {item.value}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

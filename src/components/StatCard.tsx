@@ -52,7 +52,7 @@ export function StatCard({
           {subtitle && (
             <p className="text-xs text-muted-foreground">{subtitle}</p>
           )}
-          {trend && (
+          {/* {trend && (
             <p
               className={cn(
                 "text-xs font-medium",
@@ -61,7 +61,7 @@ export function StatCard({
             >
               {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}% so với hôm qua
             </p>
-          )}
+          )} */}
         </div>
         <div className={cn("p-3 rounded-lg", iconStyles[variant])}>
           <Icon className="h-5 w-5" />

@@ -1,0 +1,190 @@
+# Disaster Monitor - Full Stack Docker Compose
+# Architecture: Crawler → Normalizer → NLP Classifier → MongoDB → FastAPI → Dashboard + WebSocket
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Database Layer
+  # ============================================
+  
+  mongodb:
+    image: mongo:7.0
+    container_name: disaster-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-adminpassword}
+      MONGO_INITDB_DATABASE: disaster_monitor
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./mongodb/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - disaster-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ============================================
+  # Caching & Pub/Sub Layer
+  # ============================================
+  
+  redis:
+    image: redis:7-alpine
+    container_name: disaster-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispassword}
+    volumes:
+      - redis_data:/data
+    networks:
+      - disaster-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redispassword}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ============================================
+  # Backend API Layer
+  # ============================================
+  
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: disaster-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - MONGO_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-adminpassword}@mongodb:27017
+      - DATABASE_NAME=disaster_monitor
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redispassword}@redis:6379
+      - SECRET_KEY=${SECRET_KEY:-your-production-secret-key-change-this}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - disaster-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # ============================================
+  # Crawler Service
+  # ============================================
+  
+  crawler:
+    build:
+      context: .
+      dockerfile: Dockerfile.crawler
+    container_name: disaster-crawler
+    restart: unless-stopped
+    environment:
+      - MONGO_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-adminpassword}@mongodb:27017
+      - DATABASE_NAME=disaster_monitor
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redispassword}@redis:6379
+      - CRAWL_INTERVAL_MINUTES=15
+      - LOG_LEVEL=INFO
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - disaster-network
+
+  # ============================================
+  # Frontend Layer
+  # ============================================
+  
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - VITE_API_URL=${API_URL:-http://localhost:8000}
+        - VITE_WS_URL=${WS_URL:-ws://localhost:8000}
+    container_name: disaster-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - disaster-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ============================================
+  # Monitoring (Optional)
+  # ============================================
+  
+  # Uncomment for production monitoring
+  # 
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: disaster-prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   networks:
+  #     - disaster-network
+  #
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: disaster-grafana
+  #   ports:
+  #     - "3001:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   networks:
+  #     - disaster-network
+
+# ============================================
+# Networks
+# ============================================
+
+networks:
+  disaster-network:
+    driver: bridge
+    name: disaster-network
+
+# ============================================
+# Volumes
+# ============================================
+
+volumes:
+  mongodb_data:
+    name: disaster-mongodb-data
+  mongodb_config:
+    name: disaster-mongodb-config
+  redis_data:
+    name: disaster-redis-data
+  # prometheus_data:
+  #   name: disaster-prometheus-data
+  # grafana_data:
+  #   name: disaster-grafana-data
